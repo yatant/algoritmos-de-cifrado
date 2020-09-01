@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+var app = require('../app')
+var http = require('http')
+const crypto = require('crypto')
+const NodeRSA = require('node-rsa')
+const key = new NodeRSA({ b: 512 })
+key.generateKeyPair()
+const publicKey = key.exportKey("public")
+const privateKey = key.exportKey("private")
+var port = normalizePort(process.env.PORT || '3000')
+app.set('port', port)
+var server = http.createServer(app)
+server.listen(port)
+
+server.on('error', onError)
+server.on('listening', start)
+
+function normalizePort(val) {
+  var port = parseInt(val, 10)
+  if (isNaN(port))
+    return val
+
+  if (port >= 0)
+    return port
+
+  return false
+}
+
+function onError(error) {
+  if (error.syscall !== 'listen')
+    throw error
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port
+
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges')
+      process.exit(1)
+      break
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use')
+      process.exit(1)
+      break
+    default:
+      throw error
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+function start() {
+  console.log("------ AES ------")
+  var text = "Mensaje que se debe decifrar...!"
+  var keyCrypto = "32foID4bMa"
+  var encryptMessage = encode(text, keyCrypto)
+  
+  console.log('text : ' + text)
+  console.log('key : ' + keyCrypto)
+  console.log('El mensaje cifrado es: ' + encryptMessage)
+  console.log('El mensaje original es:' + decode(encryptMessage, keyCrypto))
+  console.log("\n \n \n \n \n")
+
+  console.log("------ RSA ------")
+  text += " Asimetrico"
+  encryptMessage = key.encrypt(text, 'base64')
+
+  console.log('text : ' + text)
+  console.log('privateKey : ' + privateKey)
+  console.log('publicKey : ' + publicKey)
+  console.log('El mensaje cifrado es: ' + encryptMessage)
+  console.log('El mensaje original es:' + key.decrypt(encryptMessage, 'utf8'))
+}
+
+function encode(text, key) {
+  const myKey = crypto.createCipher('aes-128-cbc', key)
+  var mystr = myKey.update(text, 'utf8', 'hex')
+  mystr += myKey.final('hex')
+  return (mystr)
+}
+
+function decode(message, key) {
+  const myKey = crypto.createDecipher('aes-128-cbc', key)
+  var myStr = myKey.update(message, 'hex', 'utf8')
+  myStr += myKey.final('utf8')
+  return (myStr)
+}
